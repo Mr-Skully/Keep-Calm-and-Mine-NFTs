@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "hardhat/console.sol";
 
+import { Base64 } from "./libraries/Base64.sol";
+
 contract NFT is ERC721URIStorage {
     
     using Counters for Counters.Counter;
@@ -51,14 +53,34 @@ contract NFT is ERC721URIStorage {
         string memory first = pickRandomFirstWord(newItemId);
         string memory second = pickRandomSecondWord(newItemId);
         string memory third = pickRandomThirdWord(newItemId);
+        string memory combinedWord = string(abi.encodePacked(first, second, third));
 
-        string memory finalSvg = string(abi.encodePacked(baseSvg, first, second, third, "</text></svg>"));
+        string memory finalSvg = string(abi.encodePacked(baseSvg, combinedWord, "</text></svg>"));
+
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        combinedWord,
+                        '", "description": "A highly acclaimed collection of squares.", "image": "data:image/svg+xml;base64,',
+                        Base64.encode(bytes(finalSvg)),
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        string memory finalTokenUri = string(
+            abi.encodePacked("data:application/json;base64,", json)
+        );
+
         console.log("\n--------------------");
-        console.log(finalSvg);
+        console.log(finalTokenUri);
         console.log("--------------------\n");
 
         _safeMint(msg.sender, newItemId);
-        _setTokenURI(newItemId, "blah");
+        _setTokenURI(newItemId, finalTokenUri);
         console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
         _tokenIds.increment();
     }
